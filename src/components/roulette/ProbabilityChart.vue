@@ -96,7 +96,7 @@ onMounted(() => {
 <template>
   <div class="probability-chart">
     <div v-if="probabilities.length === 0" class="empty-state">
-      <p>График появится после добавления данных</p>
+      <p>Добавьте спины — здесь появятся шансы по числам</p>
     </div>
 
     <div v-else class="chart-container">
@@ -111,7 +111,7 @@ onMounted(() => {
             <span class="bar-number">{{ prob.number }}</span>
             <span class="bar-value">{{ prob.probability.toFixed(1) }}%</span>
           </div>
-          <div class="confidence-badge" :title="`Уровень уверенности: ${(prob.confidence * 100).toFixed(0)}%`">
+          <div class="confidence-badge" :title="`Насколько данных хватает для вывода: ${(prob.confidence * 100).toFixed(0)}%`">
             <svg
               width="16"
               height="16"
@@ -138,12 +138,8 @@ onMounted(() => {
 
         <div class="bar-details">
           <div class="detail-item">
-            <span class="detail-label">Частота:</span>
+            <span class="detail-label">Как часто выпадало (по всей истории):</span>
             <span class="detail-value">{{ prob.frequencyScore.toFixed(1) }}%</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Горячесть:</span>
-            <span class="detail-value">{{ prob.hotColdScore.toFixed(1) }}%</span>
           </div>
         </div>
       </div>

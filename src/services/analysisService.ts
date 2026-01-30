@@ -7,6 +7,8 @@ import type {
   AnalysisConfig,
   PairCombination,
   CombinationStats,
+  StreakBreakStats,
+  StreakBreakItem,
   RouletteNumber,
 } from '@/types/roulette';
 import { ROULETTE_NUMBERS } from '@/types/roulette';
@@ -153,6 +155,78 @@ function computeCombinationStats(history: HistoryEntry[]): CombinationStats {
   return { pairs, pairsByPrev };
 }
 
+// Аналитика по частотам: на какой длине серии число обрывается (падает)
+function computeStreakBreakStats(history: HistoryEntry[]): StreakBreakStats[] {
+  // Собираем длины всех серий для каждого числа
+  const streakLengthsByNumber: Record<RouletteNumber, number[]> = {
+    2: [],
+    3: [],
+    5: [],
+    10: [],
+  };
+
+  let i = 0;
+  while (i < history.length) {
+    const num = history[i].number;
+    let run = 0;
+    while (i < history.length && history[i].number === num) {
+      run++;
+      i++;
+    }
+    if (run > 0) {
+      streakLengthsByNumber[num].push(run);
+    }
+  }
+
+  return ROULETTE_NUMBERS.map((number) => {
+    const lengths = streakLengthsByNumber[number];
+    const totalStreaks = lengths.length;
+    const maxObservedStreak = totalStreaks > 0 ? Math.max(...lengths) : 0;
+    const averageStreakLength =
+      totalStreaks > 0 ? lengths.reduce((s, l) => s + l, 0) / totalStreaks : 0;
+
+    // Распределение: сколько раз серия оборвалась на длине 1, 2, 3, ...
+    const countByLength = new Map<number, number>();
+    lengths.forEach((len) => {
+      countByLength.set(len, (countByLength.get(len) ?? 0) + 1);
+    });
+
+    const breakDistribution: StreakBreakItem[] = [];
+    let mostCommonBreakAfter = 1;
+    let maxCount = 0;
+    for (let len = 1; len <= maxObservedStreak; len++) {
+      const count = countByLength.get(len) ?? 0;
+      const percentage = totalStreaks > 0 ? (count / totalStreaks) * 100 : 0;
+      breakDistribution.push({ streakLength: len, count, percentage });
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommonBreakAfter = len;
+      }
+    }
+    breakDistribution.sort((a, b) => b.percentage - a.percentage);
+
+    return {
+      number,
+      breakDistribution,
+      totalStreaks,
+      averageStreakLength,
+      mostCommonBreakAfter,
+      maxObservedStreak,
+    };
+  });
+}
+
+// Текущая серия в конце истории: сколько раз подряд выпало число
+function getCurrentStreak(history: HistoryEntry[], number: RouletteNumber): number {
+  if (history.length === 0) return 0;
+  let streak = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].number === number) streak++;
+    else break;
+  }
+  return streak;
+}
+
 // Расчет веса тренда (учитываем недавние выпадения с большим весом)
 function calculateTrendScore(stats: NumberStatistics, history: HistoryEntry[]): number {
   if (history.length === 0) return 25; // базовое значение
@@ -182,11 +256,12 @@ function calculateTrendScore(stats: NumberStatistics, history: HistoryEntry[]): 
   return weightedPercentage;
 }
 
-// Анализ вероятностей с комбинированным подходом
+// Анализ вероятностей с учётом серий подряд (штраф, если число уже долго идёт)
 function analyzeProbabilities(
   statistics: NumberStatistics[],
   history: HistoryEntry[],
-  config: AnalysisConfig = DEFAULT_CONFIG
+  config: AnalysisConfig = DEFAULT_CONFIG,
+  streakBreakStats?: StreakBreakStats[]
 ): ProbabilityAnalysis[] {
   const totalSpins = history.length;
 
@@ -195,13 +270,28 @@ function analyzeProbabilities(
     const hotColdScore = calculateHotColdScore(stats, history, config.recentSpinsWindow);
     const trendScore = calculateTrendScore(stats, history);
 
-    // Комбинированная вероятность
-    const probability =
+    let probability =
       frequencyScore * config.frequencyWeight +
       hotColdScore * config.hotColdWeight +
       trendScore * config.trendWeight;
 
-    // Уровень уверенности зависит от количества данных
+    // Учёт серии подряд: если число уже выпало N раз подряд, снижаем шанс по статистике обрывов
+    const currentStreak = getCurrentStreak(history, stats.number);
+    if (currentStreak >= 1 && streakBreakStats?.length) {
+      const streakStat = streakBreakStats.find((s) => s.number === stats.number);
+      if (streakStat?.breakDistribution?.length) {
+        const breakAtThisLength = streakStat.breakDistribution.find(
+          (b) => b.streakLength === currentStreak
+        );
+        const cumulativeBreakPct = streakStat.breakDistribution
+          .filter((b) => b.streakLength <= currentStreak)
+          .reduce((sum, b) => sum + b.percentage, 0);
+        // Чем чаще серия обрывается на этой длине (или короче), тем сильнее штраф
+        const penalty = Math.min(35, (breakAtThisLength?.percentage ?? cumulativeBreakPct * 0.5) * 0.8);
+        probability = Math.max(5, probability - penalty);
+      }
+    }
+
     let confidence = 0;
     if (totalSpins >= 50) confidence = 0.9;
     else if (totalSpins >= 30) confidence = 0.75;
@@ -220,39 +310,64 @@ function analyzeProbabilities(
   });
 }
 
-// Генерация рекомендаций (по всей истории + комбинации)
+// Генерация рекомендаций (по всей истории + комбинации + учёт серий подряд)
 function generateRecommendations(
   probabilities: ProbabilityAnalysis[],
   statistics: NumberStatistics[],
   history: HistoryEntry[],
-  combinationStats: CombinationStats
+  combinationStats: CombinationStats,
+  streakBreakStats?: StreakBreakStats[]
 ): Recommendation[] {
   const sorted = [...probabilities].sort((a, b) => b.probability - a.probability);
   const lastNumber = history.length > 0 ? history[history.length - 1].number : null;
+  const lastNumberStreak = lastNumber !== null ? getCurrentStreak(history, lastNumber) : 0;
+  const lastNumberBreakStat = lastNumber !== null && lastNumberStreak >= 1
+    ? streakBreakStats?.find((s) => s.number === lastNumber)?.breakDistribution?.find(
+        (b) => b.streakLength === lastNumberStreak
+      )
+    : null;
+  const streakContext =
+    lastNumber !== null &&
+    lastNumberStreak >= 2 &&
+    lastNumberBreakStat &&
+    lastNumberBreakStat.percentage >= 20
+      ? `${lastNumber} уже ${lastNumberStreak} раз подряд — по истории серия часто обрывается. `
+      : '';
 
   return sorted.slice(0, 2).map((prob) => {
     const stats = statistics.find((s) => s.number === prob.number)!;
     let reason = '';
 
-    // Приоритет: комбинации по всей истории (после какого числа чаще выпадает)
-    if (lastNumber !== null && combinationStats.pairsByPrev[lastNumber]?.length) {
+    const currentStreak = getCurrentStreak(history, prob.number);
+    const streakStat = streakBreakStats?.find((s) => s.number === prob.number);
+    const breakAtStreak = streakStat?.breakDistribution?.find((b) => b.streakLength === currentStreak);
+
+    const prefix = streakContext && prob.number !== lastNumber ? streakContext : '';
+
+    // Число уже долго идёт подряд — по истории серия часто обрывается (снижаем шанс)
+    if (currentStreak >= 1 && breakAtStreak && breakAtStreak.percentage >= 25) {
+      reason = `Сейчас ${prob.number} выпало ${currentStreak} раз подряд — в ${breakAtStreak.percentage.toFixed(0)}% случаев серия обрывается на этой длине`;
+    }
+    // Рекомендуем другое число: после текущего чаще всего выпадает это
+    if (!reason && lastNumber !== null && combinationStats.pairsByPrev[lastNumber]?.length) {
       const bestAfter = combinationStats.pairsByPrev[lastNumber][0];
       if (bestAfter.next === prob.number && bestAfter.count > 0) {
-        reason = `По всей истории после ${lastNumber} чаще всего выпадает ${prob.number} (${bestAfter.percentage.toFixed(0)}%, ${bestAfter.count} раз)`;
+        reason = `${prefix}После ${lastNumber} чаще всего выпадает ${prob.number} (${bestAfter.percentage.toFixed(0)}%, ${bestAfter.count} раз)`;
       }
     }
     if (!reason && prob.frequencyScore >= 25) {
-      reason = `По всей истории: выпадает в ${stats.percentage.toFixed(0)}% спинов (${stats.count} раз)`;
+      reason = `${prefix}По всей истории: выпадает в ${stats.percentage.toFixed(0)}% спинов (${stats.count} раз)`;
     }
     if (!reason && stats.isHot) {
-      reason = `Горячее: часто в последних спинах (${prob.hotColdScore.toFixed(0)}%)`;
+      reason = `${prefix}Горячее: часто в последних спинах (${prob.hotColdScore.toFixed(0)}%)`;
     }
     if (!reason && stats.isCold) {
-      reason = `Холодное: давно не выпадало, может скоро выпасть`;
+      reason = `${prefix}Холодное: давно не выпадало, может скоро выпасть`;
     }
     if (!reason) {
-      reason = `Сбалансированный выбор (частота ${prob.frequencyScore.toFixed(0)}%)`;
+      reason = `${prefix}Сбалансированный выбор (частота ${prob.frequencyScore.toFixed(0)}%)`;
     }
+    reason = reason.trim();
 
     return {
       number: prob.number,
@@ -269,13 +384,20 @@ export function analyzeRouletteHistory(
   config: AnalysisConfig = DEFAULT_CONFIG
 ): OverallStatistics {
   const numberStats = calculateNumberStatistics(history, config);
-  const probabilities = analyzeProbabilities(numberStats, history, config);
   const combinationStats = computeCombinationStats(history);
+  const streakBreakStats = computeStreakBreakStats(history);
+  const probabilities = analyzeProbabilities(
+    numberStats,
+    history,
+    config,
+    streakBreakStats
+  );
   const recommendations = generateRecommendations(
     probabilities,
     numberStats,
     history,
-    combinationStats
+    combinationStats,
+    streakBreakStats
   );
 
   return {
@@ -284,6 +406,7 @@ export function analyzeRouletteHistory(
     probabilities,
     recommendations,
     combinationStats,
+    streakBreakStats,
   };
 }
 

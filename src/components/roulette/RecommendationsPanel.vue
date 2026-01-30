@@ -27,11 +27,11 @@ function getNumberColor(number: RouletteNumber): string {
 
 // Получение текста уровня уверенности
 function getConfidenceText(confidence: number): string {
-  if (confidence >= 0.8) return 'Очень высокая';
-  if (confidence >= 0.6) return 'Высокая';
-  if (confidence >= 0.4) return 'Средняя';
-  if (confidence >= 0.2) return 'Низкая';
-  return 'Очень низкая';
+  if (confidence >= 0.8) return 'Очень надёжно';
+  if (confidence >= 0.6) return 'Надёжно';
+  if (confidence >= 0.4) return 'Средне';
+  if (confidence >= 0.2) return 'Мало данных';
+  return 'Очень мало данных';
 }
 
 // Получение класса для уровня уверенности
@@ -94,12 +94,12 @@ onMounted(() => {
 <template>
   <div class="recommendations-panel">
     <div v-if="totalSpins < 5" class="insufficient-data">
-      <p>Недостаточно данных для рекомендаций</p>
-      <p class="hint">Добавьте хотя бы 5 спинов для получения рекомендаций</p>
+      <p>Мало данных для подсказок</p>
+      <p class="hint">Добавьте минимум 5 спинов — появятся рекомендации, на что ставить</p>
     </div>
 
     <div v-else-if="recommendations.length === 0" class="no-recommendations">
-      <p>Рекомендации временно недоступны</p>
+      <p>Пока нет рекомендаций</p>
     </div>
 
     <div v-else class="recommendations-grid">
@@ -118,12 +118,12 @@ onMounted(() => {
 
         <div class="card-body">
           <div class="probability-info">
-            <span class="label">Вероятность:</span>
+            <span class="label">Шанс по анализу:</span>
             <span class="value">{{ rec.probability.toFixed(1) }}%</span>
           </div>
 
           <div class="confidence-info">
-            <span class="label">Уверенность:</span>
+            <span class="label">Надёжность вывода:</span>
             <div class="confidence-bar-container">
               <div
                 class="confidence-bar"

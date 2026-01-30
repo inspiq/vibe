@@ -63,12 +63,12 @@ const sortedStatistics = computed(() => {
 <template>
   <div class="statistics-panel">
     <div v-if="totalSpins === 0" class="empty-state">
-      <p>Статистика появится после добавления данных</p>
+      <p>Добавьте спины — здесь появится сводка по числам</p>
     </div>
 
     <div v-else class="stats-container">
       <div class="total-spins">
-        <span class="label">Всего спинов:</span>
+        <span class="label">Всего спинов сделано:</span>
         <span class="value">{{ totalSpins }}</span>
       </div>
 
@@ -80,7 +80,7 @@ const sortedStatistics = computed(() => {
           :style="{ '--number-color': getNumberColor(stat.number) }"
         >
           <div class="stat-header">
-            <div class="stat-number">{{ stat.number }}</div>
+            <div class="stat-number">{{ stat.number }}x</div>
             <div class="stat-badges">
               <span v-if="stat.isHot" class="badge hot">Горячее</span>
               <span v-if="stat.isCold" class="badge cold">Холодное</span>
@@ -89,19 +89,19 @@ const sortedStatistics = computed(() => {
 
           <div class="stat-details">
             <div class="stat-row">
-              <span class="stat-label">Выпало раз:</span>
+              <span class="stat-label">Сколько раз выпало:</span>
               <span class="stat-value">{{ stat.count }}</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Процент:</span>
+              <span class="stat-label">Доля от всех спинов:</span>
               <span class="stat-value">{{ formatPercentage(stat.percentage) }}%</span>
             </div>
             <div class="stat-row">
-              <span class="stat-label">Последнее:</span>
+              <span class="stat-label">Когда выпало в последний раз:</span>
               <span class="stat-value small">{{ getLastSeenText(stat) }}</span>
             </div>
             <div v-if="stat.averageInterval > 0" class="stat-row">
-              <span class="stat-label">Средний интервал:</span>
+              <span class="stat-label">В среднем через сколько спинов выпадает снова:</span>
               <span class="stat-value small">{{ stat.averageInterval.toFixed(1) }}</span>
             </div>
           </div>

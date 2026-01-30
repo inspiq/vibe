@@ -48,7 +48,7 @@ function handleNumberClick(number: RouletteNumber, event: MouseEvent): void {
 function createParticle(number: RouletteNumber, event: MouseEvent): void {
   const particle = document.createElement('div');
   particle.className = 'number-particle';
-  particle.textContent = String(number);
+  particle.textContent = `${number}x`;
   particle.style.left = `${event.clientX}px`;
   particle.style.top = `${event.clientY}px`;
   particle.style.color = numberColors[number];
@@ -73,7 +73,7 @@ function getNumberColor(number: RouletteNumber): string {
 
 <template>
   <div class="number-input">
-    <h2>Введите выпавшее число</h2>
+    <h2>Что выпало? Нажмите число</h2>
     <div class="numbers-grid">
       <button
         v-for="number in [2, 3, 5, 10]"

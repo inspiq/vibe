@@ -9,6 +9,7 @@ import StatisticsPanel from './StatisticsPanel.vue';
 import ProbabilityChart from './ProbabilityChart.vue';
 import RecommendationsPanel from './RecommendationsPanel.vue';
 import CombinationsPanel from './CombinationsPanel.vue';
+import StreakBreakPanel from './StreakBreakPanel.vue';
 
 // Инициализация хранилища
 const { history, clearStorage } = useLocalStorage();
@@ -66,21 +67,22 @@ const analysis = computed(() => {
         <NumberInput @add-number="addNumber" />
       </section>
 
-      <!-- Рекомендации -->
+      <!-- На что ставить (рекомендации) -->
       <section class="section recommendations-section">
+        <h2 class="section-title">На что ставить</h2>
         <RecommendationsPanel
           :recommendations="analysis.recommendations"
           :total-spins="analysis.totalSpins"
         />
       </section>
 
-      <!-- Визуализация вероятностей -->
+      <!-- Шансы по числам -->
       <section class="section chart-section">
-        <h2>Вероятности выпадения</h2>
+        <h2>Шансы выпадения по числам</h2>
         <ProbabilityChart :probabilities="analysis.probabilities" />
       </section>
 
-      <!-- Комбинации по всей истории -->
+      <!-- Что за чем выпадает -->
       <section class="section combinations-section">
         <CombinationsPanel
           :combination-stats="analysis.combinationStats"
@@ -88,22 +90,30 @@ const analysis = computed(() => {
         />
       </section>
 
-      <!-- Статистика -->
+      <!-- Когда число перестаёт идти подряд -->
+      <section class="section streak-break-section">
+        <StreakBreakPanel
+          :streak-break-stats="analysis.streakBreakStats"
+          :total-spins="analysis.totalSpins"
+        />
+      </section>
+
+      <!-- Сводка по каждому числу -->
       <section class="section statistics-section">
-        <h2>Статистика</h2>
+        <h2>Сводка по каждому числу</h2>
         <StatisticsPanel :statistics="analysis.numberStats" :total-spins="analysis.totalSpins" />
       </section>
 
-      <!-- История -->
+      <!-- История спинов -->
       <section class="section history-section">
         <div class="history-header">
-          <h2>История выпадений</h2>
+          <h2>История спинов</h2>
           <button
             class="clear-button"
             @click="handleClearHistory"
             :disabled="history.length === 0"
           >
-            Очистить историю
+            Очистить всё
           </button>
         </div>
         <HistoryList :history="history" @remove-entry="removeEntry" />
@@ -113,11 +123,11 @@ const analysis = computed(() => {
     <!-- Модальное окно подтверждения очистки -->
     <div v-if="showConfirmClear" class="modal-overlay" @click="cancelClear">
       <div class="modal-content" @click.stop>
-        <h3>Подтверждение очистки</h3>
-        <p>Вы уверены, что хотите удалить всю историю? Это действие нельзя отменить.</p>
+        <h3>Очистить всё?</h3>
+        <p>Вся история спинов будет удалена. Отменить нельзя.</p>
         <div class="modal-buttons">
           <button class="btn-cancel" @click="cancelClear">Отмена</button>
-          <button class="btn-confirm" @click="confirmClear">Очистить</button>
+          <button class="btn-confirm" @click="confirmClear">Да, очистить</button>
         </div>
       </div>
     </div>

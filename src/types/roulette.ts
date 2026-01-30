@@ -52,13 +52,31 @@ export interface CombinationStats {
   pairsByPrev: Record<RouletteNumber, PairCombination[]>; // для каждого prev — какие next шли после
 }
 
+// На какой длине серии число обрывается: "после 1 раза" — count, "после 2 раз" — count и т.д.
+export interface StreakBreakItem {
+  streakLength: number;   // длина серии (1, 2, 3, ...)
+  count: number;         // сколько раз серия оборвалась на этой длине
+  percentage: number;    // доля от всех обрывов этого числа
+}
+
+// Аналитика по частотам: где обрывается или "падает" число
+export interface StreakBreakStats {
+  number: RouletteNumber;
+  breakDistribution: StreakBreakItem[];  // распределение обрывов по длине серии
+  totalStreaks: number;                  // всего серий (обрывов)
+  averageStreakLength: number;          // средняя длина серии до обрыва
+  mostCommonBreakAfter: number;         // чаще всего обрывается после N подряд (мода)
+  maxObservedStreak: number;            // макс. наблюдаемая длина серии
+}
+
 // Общая статистика
 export interface OverallStatistics {
   totalSpins: number;
   numberStats: NumberStatistics[];
   probabilities: ProbabilityAnalysis[];
   recommendations: Recommendation[];
-  combinationStats: CombinationStats; // комбинации по всей истории
+  combinationStats: CombinationStats;
+  streakBreakStats: StreakBreakStats[]; // аналитика по обрывам серий
 }
 
 // Данные для localStorage

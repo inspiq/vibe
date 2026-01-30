@@ -9,11 +9,11 @@ defineProps<{
 
 <template>
   <div class="combinations-panel">
-    <h2>Комбинации по всей истории</h2>
-    <p class="hint">Пары подряд: что выпало после чего (по всем спинам)</p>
+    <h2>Что выпадает после чего</h2>
+    <p class="hint">После какого числа чаще всего выпадает следующее (по всей истории)</p>
 
     <div v-if="!combinationStats || totalSpins < 2" class="empty-state">
-      <p>Нужно минимум 2 спина для анализа комбинаций</p>
+      <p>Нужно хотя бы 2 спина</p>
     </div>
 
     <div v-else class="combinations-grid">
@@ -22,7 +22,7 @@ defineProps<{
         :key="prev"
         class="prev-block"
       >
-        <div class="prev-label">После {{ prev }} →</div>
+        <div class="prev-label">Если выпало {{ prev }}x, дальше чаще:</div>
         <div class="pairs-list">
           <div
             v-for="pair in combinationStats.pairsByPrev[prev as RouletteNumber]"
@@ -30,7 +30,7 @@ defineProps<{
             class="pair-row"
             :class="{ 'pair-high': pair.percentage >= 30 }"
           >
-            <span class="pair-next">{{ pair.next }}</span>
+            <span class="pair-next">{{ pair.next }}x</span>
             <span class="pair-count">{{ pair.count }} раз</span>
             <span class="pair-pct">{{ pair.percentage.toFixed(0) }}%</span>
           </div>
@@ -52,6 +52,37 @@ defineProps<{
     opacity: 0.8;
     margin-bottom: 1rem;
   }
+
+  .subtitle {
+    font-size: 1rem;
+    margin: 1rem 0 0.5rem;
+    opacity: 0.9;
+    color: #f2a100;
+  }
+
+  .subtitle:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.combinations-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.triples-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.triple-block {
+  font-size: 0.9rem;
 }
 
 .empty-state {

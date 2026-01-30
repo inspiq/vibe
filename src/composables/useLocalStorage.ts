@@ -1,5 +1,6 @@
 import { ref, watch, type Ref } from 'vue';
 import type { StorageData, HistoryEntry } from '@/types/roulette';
+import { ROULETTE_NUMBERS } from '@/types/roulette';
 
 const STORAGE_KEY = 'roulette-analyzer-data';
 
@@ -13,7 +14,14 @@ export function useLocalStorage() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: StorageData = JSON.parse(stored);
-        history.value = data.history || [];
+        const raw = data.history || [];
+        history.value = raw
+          .filter((e: Partial<HistoryEntry>) => e?.number != null && ROULETTE_NUMBERS.includes(e.number as any))
+          .map((entry: Partial<HistoryEntry>) => ({
+            id: entry.id ?? `${entry.timestamp ?? Date.now()}-${Math.random()}`,
+            number: entry.number as HistoryEntry['number'],
+            timestamp: entry.timestamp ?? Date.now(),
+          }));
       }
       isLoaded.value = true;
     } catch (error) {

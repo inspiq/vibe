@@ -95,8 +95,8 @@ onMounted(() => {
 <template>
   <div class="history-list-wrapper">
     <div v-if="displayedHistory.length === 0" class="empty-state">
-      <p>История пуста</p>
-      <p class="empty-hint">Добавьте выпавшие числа, чтобы начать анализ</p>
+      <p>Пока нет записей</p>
+      <p class="empty-hint">Нажимайте кнопки выше после каждого спина</p>
     </div>
 
     <div v-else ref="historyListRef" class="history-list">
@@ -113,7 +113,7 @@ onMounted(() => {
           <span class="item-index">#{{ history.length - index }}</span>
           <span class="item-time">{{ formatTime(entry.timestamp) }}</span>
         </div>
-        <button class="item-remove" @click="handleRemove(entry.id)" title="Удалить">
+        <button class="item-remove" @click="handleRemove(entry.id)" title="Удалить запись">
           <svg
             width="16"
             height="16"
