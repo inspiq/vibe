@@ -8,8 +8,8 @@ import HistoryList from './HistoryList.vue';
 import StatisticsPanel from './StatisticsPanel.vue';
 import ProbabilityChart from './ProbabilityChart.vue';
 import RecommendationsPanel from './RecommendationsPanel.vue';
-import CombinationsPanel from './CombinationsPanel.vue';
-import StreakBreakPanel from './StreakBreakPanel.vue';
+// import CombinationsPanel from './CombinationsPanel.vue';
+// import StreakBreakPanel from './StreakBreakPanel.vue';
 
 // Инициализация хранилища
 const { history, clearStorage } = useLocalStorage();
@@ -83,20 +83,20 @@ const analysis = computed(() => {
       </section>
 
       <!-- Что за чем выпадает -->
-      <section class="section combinations-section">
+      <!-- <section class="section combinations-section">
         <CombinationsPanel
           :combination-stats="analysis.combinationStats"
           :total-spins="analysis.totalSpins"
         />
-      </section>
+      </section> -->
 
       <!-- Когда число перестаёт идти подряд -->
-      <section class="section streak-break-section">
+      <!-- <section class="section streak-break-section">
         <StreakBreakPanel
           :streak-break-stats="analysis.streakBreakStats"
           :total-spins="analysis.totalSpins"
         />
-      </section>
+      </section> -->
 
       <!-- Сводка по каждому числу -->
       <section class="section statistics-section">
