@@ -1,9 +1,0 @@
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-# SPA: если файла нет — отдаём index.html (файлы из /assets/* Netlify отдаёт как есть)
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
